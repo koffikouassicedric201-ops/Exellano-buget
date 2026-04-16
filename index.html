@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Budget Perso</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        /* DESIGN DE L'APPLICATION */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 15px; 
+            background: #f0f2f5; 
+            margin: 0;
+        }
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            margin-bottom: 20px;
+        }
+        h2 { margin-top: 0; color: #1a1a1a; font-size: 1.2rem; }
+        .balance { 
+            font-size: 28px; 
+            font-weight: bold; 
+            color: #27ae60; 
+            margin: 15px 0;
+            text-align: center;
+        }
+        input, select, button { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+            box-sizing: border-box; 
+            font-size: 16px; /* Évite le zoom auto sur iPhone */
+        }
+        button { 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            font-weight: bold; 
+            transition: 0.3s;
+        }
+        button:active { transform: scale(0.98); background: #219150; }
+        .btn-delete { background: #e74c3c; margin-top: 10px; font-size: 12px; padding: 8px; }
+        
+        .history { margin-top: 10px; }
+        .item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 12px; 
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .item.revenu { border-left: 5px solid #27ae60; }
+        .item.depense { border-left: 5px solid #e74c3c; }
+        .type-label { font-size: 12px; text-transform: uppercase; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Mon Budget</h2>
+        <div class="balance"><span id="solde">0</span> CFA</div>
+        
+        <input type="text" id="libelle" placeholder="Ex: Salaire, Transport...">
+        <input type="number" id="montant" placeholder="Montant">
+        <select id="type">
+            <option value="revenu">Revenu (+)</option>
+            <option value="depense">Dépense (-)</option>
+        </select>
+        <button onclick="ajouterTransaction()">Ajouter l'opération</button>
+    </div>
+
+    <div class="history" id="liste">
+        </div>
+
+    <button class="btn-delete" onclick="effacerTout()">Réinitialiser l'application</button>
+
+    <script>
+        // LOGIQUE DE L'APPLICATION
+        let transactions = JSON.parse(localStorage.getItem('budgetData')) || [];
+
+        window.onload = () => {
+            afficherTransactions();
+            calculerSolde();
+        };
+
+        function ajouterTransaction() {
+            const lib = document.getElementById('libelle').value;
+            const mnt = parseFloat(document.getElementById('montant').value);
+            const typ = document.getElementById('type').value;
+
+            if (!lib || isNaN(mnt)) {
+                alert("Veuillez remplir les informations.");
+                return;
+            }
+
+            const transaction = { id: Date.now(), libelle: lib, montant: mnt, type: typ };
+            transactions.push(transaction);
+            
+            sauvegarder();
+            document.getElementById('libelle').value = '';
+            document.getElementById('montant').value = '';
+            
+            afficherTransactions();
+            calculerSolde();
+        }
+
+        function calculerSolde() {
+            const total = transactions.reduce((acc, t) => {
+                return t.type === 'revenu' ? acc + t.montant : acc - t.montant;
+            }, 0);
+            document.getElementById('solde').innerText = total.toLocaleString();
+            document.getElementById('solde').style.color = total >= 0 ? '#27ae60' : '#e74c3c';
+        }
+
+        function afficherTransactions() {
+            const liste = document.getElementById('liste');
+            liste.innerHTML = '';
+
+            transactions.slice().reverse().forEach(t => {
+                const div = document.createElement('div');
+                div.className = `item ${t.type}`;
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold">${t.libelle}</div>
+                        <div class="type-label" style="color:gray">${t.type}</div>
+                    </div>
+                    <div style="font-weight:bold">${t.type === 'revenu' ? '+' : '-'}${t.montant}</div>
+                `;
+                liste.appendChild(div);
+            });
+        }
+
+        function sauvegarder() {
+            localStorage.setItem('budgetData', JSON.stringify(transactions));
+        }
+
+        function effacerTout() {
+            if(confirm("Effacer tout l'historique ?")) {
+                localStorage.clear();
+                transactions = [];
+                afficherTransactions();
+                calculerSolde();
+            }
+        }
+    </script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+</body>
+</html>
